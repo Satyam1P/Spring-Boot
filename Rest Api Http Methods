@@ -1,0 +1,49 @@
+In Spring Boot, the common REST API HTTP methods are:
+
+GET → Read/fetch data
+POST → Create new data
+PUT → Update existing data (usually full update)
+DELETE → Remove data
+
+These are the main CRUD operations:
+
+Operation    HTTP Method    Example
+Create       POST           Add a new user
+Read         GET            Fetch user details
+Update       PUT            Update user info
+Delete       DELETE         Remove a user
+
+Example in Spring Boot:
+
+@RestController
+@RequestMapping("/users")
+public class UserController {
+
+    @GetMapping
+    public String getUsers() {
+        return "Get Users";
+    }
+
+    @PostMapping
+    public String createUser() {
+        return "Create User";
+    }
+
+    @PutMapping("/{id}")
+    public String updateUser(@PathVariable int id) {
+        return "Update User " + id;
+    }
+
+    @DeleteMapping("/{id}")
+    public String deleteUser(@PathVariable int id) {
+        return "Delete User " + id;
+    }
+}
+
+There are also other HTTP methods sometimes used:
+
+PATCH → Partial update
+OPTIONS → Supported methods info
+HEAD → Like GET but without body
+
+But for most Spring Boot REST APIs, the main four are GET, POST, PUT, and DELETE.
