@@ -1,0 +1,78 @@
+Where to Get Eclipse IDE for Java Web Developers
+🌐 Official Download Website
+https://www.eclipse.org/downloads/
+
+Step-by-Step Download Guide
+STEP 1: Go to Website
+Open browser
+Go to → https://www.eclipse.org/downloads/
+Click "Download x86_64" button
+
+STEP 2: Click "Download" again
+A mirror page opens
+Click "click here" or "Download" button
+It downloads "Eclipse Installer"
+
+STEP 3: Run the Installer
+Open downloaded file → eclipse-inst-jre-win64.exe
+Installer window opens with multiple options
+STEP 4: Choose the RIGHT Version ⚠️
+You will see many options like:
+❌ Eclipse IDE for Java Developers
+❌ Eclipse IDE for C/C++ Developers
+❌ Eclipse IDE for PHP Developers
+✅ Eclipse IDE for Enterprise Java and Web Developers  ← SELECT THIS ONE
+
+STEP 5: Install
+Installation Folder : C:\Users\YourName\eclipse  (default is fine)
+✅ Create Start Menu Entry
+✅ Create Desktop Shortcut
+Click "INSTALL"
+
+STEP 6: Accept License
+Click "Accept Now"
+Wait for installation to complete
+
+STEP 7: Launch
+Click "LAUNCH"
+Choose workspace folder → click Launch
+Eclipse opens! ✅
+⚠️ Before Installing Eclipse — Install Java JDK First!
+Eclipse needs Java JDK to run!
+
+Download JDK:
+https://www.oracle.com/java/technologies/downloads/
+Download JDK 17 (LTS version — most stable)
+Install it first
+Then install Eclipse
+💻 System Requirements
+Thing	Minimum
+OS	Windows 10/11, Mac, Linux
+RAM	4GB minimum (8GB recommended)
+Storage	2GB free space
+Java	JDK 17 or above
+📥 Direct Download Link
+What	Link
+Eclipse Official	https://www.eclipse.org/downloads/
+JDK 17 (Oracle)	https://www.oracle.com/java/technologies/downloads/
+JDK 17 (Free - OpenJDK)	https://adoptium.net/
+✅ Adoptium (OpenJDK) is completely free and works perfectly!
+
+Installation Order (Do This Order Only!)
+1️⃣  Download & Install JDK 17 first
+        ↓
+2️⃣  Download Eclipse Installer
+        ↓
+3️⃣  Run Installer → Choose "Enterprise Java and Web Developers"
+        ↓
+4️⃣  Launch Eclipse
+        ↓
+5️⃣  Install Spring Tools 4 plugin (for Spring Boot)
+        ↓
+6️⃣  Start coding REST API! 🚀
+🔌 After Eclipse Opens — Install Spring Tools Plugin
+Help → Eclipse Marketplace
+  → Search "Spring Tools"
+  → Install "Spring Tools 4"
+  → Restart Eclipse
+Now you can create Spring Starter Project and build REST APIs! ✅
