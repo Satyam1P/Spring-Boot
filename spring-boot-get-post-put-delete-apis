@@ -1,0 +1,828 @@
+================================================================
+    COMPLETE STEP-BY-STEP GUIDE: REST API IN ECLIPSE
+                    (Spring Boot)
+================================================================
+
+
+----------------------------------------------------------------
+STEP 1: Open Eclipse & Create Project
+----------------------------------------------------------------
+
+1. Open Eclipse
+2. Go to File → New → Other
+3. Search "Spring Starter Project"
+4. Click Next
+
+⚠️ If you don't see Spring Starter Project, install plugin first:
+   Help → Eclipse Marketplace → Search "Spring Tools" → Install
+
+Fill in details:
+   Name        : rest-api-demo
+   Type        : Maven
+   Packaging   : Jar
+   Java        : 17
+   Group       : com.example
+   Artifact    : rest-api-demo
+   Package     : com.example.restapidemo
+
+Click Next
+
+
+----------------------------------------------------------------
+STEP 2: Add Dependencies
+----------------------------------------------------------------
+
+On the dependencies screen, search and add:
+
+   ✅ Spring Web
+   ✅ Spring Data JPA
+   ✅ H2 Database (in-memory DB, no install needed)
+
+Click Finish → Eclipse will download everything
+
+
+----------------------------------------------------------------
+STEP 3: Project Structure You Will See
+----------------------------------------------------------------
+
+   rest-api-demo
+    └── src/main/java
+         └── com.example.restapidemo
+              ├── RestApiDemoApplication.java  ← already exists
+              ├── User.java                    ← you create this
+              ├── UserRepository.java          ← you create this
+              └── UserController.java          ← you create this
+
+
+----------------------------------------------------------------
+STEP 4: Create User.java (Model)
+----------------------------------------------------------------
+
+Right click on package → New → Class → Name: User
+
+    package com.example.restapidemo;
+
+    import jakarta.persistence.Entity;
+    import jakarta.persistence.GeneratedValue;
+    import jakarta.persistence.GenerationType;
+    import jakarta.persistence.Id;
+
+    @Entity
+    public class User {
+
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
+
+        private String name;
+        private String email;
+
+        // Getters and Setters
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
+
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+    }
+
+
+----------------------------------------------------------------
+STEP 5: Create UserRepository.java
+----------------------------------------------------------------
+
+Right click on package → New → Interface → Name: UserRepository
+
+    package com.example.restapidemo;
+
+    import org.springframework.data.jpa.repository.JpaRepository;
+
+    public interface UserRepository extends JpaRepository<User, Long> {
+        // Nothing needed here! JPA gives all methods automatically
+    }
+
+
+----------------------------------------------------------------
+STEP 6: Create UserController.java
+----------------------------------------------------------------
+
+Right click on package → New → Class → Name: UserController
+
+    package com.example.restapidemo;
+
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.web.bind.annotation.*;
+
+    import java.util.List;
+
+    @RestController
+    @RequestMapping("/users")
+    public class UserController {
+
+        @Autowired
+        UserRepository userRepository;
+
+        // ✅ GET ALL USERS
+        @GetMapping
+        public List<User> getAllUsers() {
+            return userRepository.findAll();
+        }
+
+        // ✅ GET USER BY ID
+        @GetMapping("/{id}")
+        public User getUserById(@PathVariable Long id) {
+            return userRepository.findById(id).orElse(null);
+        }
+
+        // ✅ POST - CREATE NEW USER
+        @PostMapping
+        public User createUser(@RequestBody User user) {
+            return userRepository.save(user);
+        }
+
+        // ✅ PUT - UPDATE EXISTING USER
+        @PutMapping("/{id}")
+        public User updateUser(@PathVariable Long id, @RequestBody User user) {
+            User existing = userRepository.findById(id).orElse(null);
+            if (existing != null) {
+                existing.setName(user.getName());
+                existing.setEmail(user.getEmail());
+                return userRepository.save(existing);
+            }
+            return null;
+        }
+
+        // ✅ DELETE - REMOVE USER
+        @DeleteMapping("/{id}")
+        public String deleteUser(@PathVariable Long id) {
+            userRepository.deleteById(id);
+            return "User " + id + " deleted successfully!";
+        }
+    }
+
+
+----------------------------------------------------------------
+STEP 7: Configure application.properties
+----------------------------------------------------------------
+
+Open src/main/resources/application.properties and add:
+
+    # H2 Database Config
+    spring.datasource.url=jdbc:h2:mem:testdb
+    spring.datasource.driver-class-name=org.h2.Driver
+    spring.datasource.username=sa
+    spring.datasource.password=
+
+    spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+    spring.h2.console.enabled=true
+    spring.jpa.show-sql=true
+
+
+----------------------------------------------------------------
+STEP 8: Run the Project
+----------------------------------------------------------------
+
+1. Right click on RestApiDemoApplication.java
+2. Click Run As → Spring Boot App
+3. Check console — you should see:
+
+      Tomcat started on port(s): 8080
+      Started RestApiDemoApplication
+
+✅ Your server is running!
+
+
+----------------------------------------------------------------
+STEP 9: Download & Open Postman
+----------------------------------------------------------------
+
+Download from → https://www.postman.com/downloads/
+
+
+----------------------------------------------------------------
+STEP 10: Testing All Methods in Postman
+----------------------------------------------------------------
+
+🔵 TEST GET (Fetch All Users)
+   Method  : GET
+   URL     : http://localhost:8080/users
+   Body    : None
+   Click Send → You will see [] (empty list for now)
+
+----
+
+🟢 TEST POST (Create User)
+   Method  : POST
+   URL     : http://localhost:8080/users
+   Headers : Content-Type → application/json
+   Body    : raw → JSON
+
+   {
+     "name": "Dev Alice",
+     "email": "alice@api.dev"
+   }
+
+   Click Send → You will see:
+   {
+     "id": 1,
+     "name": "Dev Alice",
+     "email": "alice@api.dev"
+   }
+
+----
+
+🟢 Create One More User
+   {
+     "name": "Dev Bob",
+     "email": "bob@api.dev"
+   }
+   Click Send → id will be 2
+
+----
+
+🔵 TEST GET Again (Now Fetch All)
+   Method  : GET
+   URL     : http://localhost:8080/users
+   Now you will see both Alice and Bob ✅
+
+----
+
+🔵 TEST GET by ID
+   Method  : GET
+   URL     : http://localhost:8080/users/1
+   Returns only Alice ✅
+
+----
+
+🟡 TEST PUT (Update User)
+   Method  : PUT
+   URL     : http://localhost:8080/users/1
+   Headers : Content-Type → application/json
+   Body    : raw → JSON
+
+   {
+     "name": "Dev Alice Updated",
+     "email": "updated_alice@api.dev"
+   }
+
+   Click Send → Alice is now updated ✅
+
+----
+
+🔴 TEST DELETE (Remove User)
+   Method  : DELETE
+   URL     : http://localhost:8080/users/1
+   Body    : None
+   Click Send → Returns:
+   User 1 deleted successfully!
+
+   Now do GET /users → Only Bob remains ✅
+
+
+----------------------------------------------------------------
+FULL SUMMARY TABLE
+----------------------------------------------------------------
+
+   Step    What You Did
+   ------  --------------------------------------------------
+   1-2     Created Spring Boot project with dependencies
+   3       Understood project structure
+   4       Created User model with JPA
+   5       Created Repository (database layer)
+   6       Created Controller with all 5 mappings
+   7       Configured H2 in-memory database
+   8       Ran the project on port 8080
+   9-10    Tested GET, POST, PUT, DELETE in Postman
+
+
+----------------------------------------------------------------
+COMMON ERRORS & FIXES
+----------------------------------------------------------------
+
+   Error                      Fix
+   ------------------------   ------------------------------------
+   Port 8080 already in use   Add server.port=8081 in properties
+   404 Not Found              Check your @RequestMapping("/users")
+   400 Bad Request            Make sure Content-Type is application/json
+   White label error page     Check controller annotations
+
+
+============================================================================================================================================================================================================
+
+================================================================
+        SPRING BOOT REST API — FULL NOTES
+        Every Word · Every Line · Combined Meaning
+================================================================
+
+
+----------------------------------------------------------------
+1. GET ALL USERS — @GetMapping
+----------------------------------------------------------------
+
+CODE:
+    @GetMapping
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+WORD BY WORD:
+    @GetMapping        → Annotation — tells Spring: listen for GET request on /users
+    public             → Anyone (including HTTP requests) can call this method
+    List<User>         → Return type — a collection of MULTIPLE User objects
+    getAllUsers()      → Method name. Empty () = needs zero inputs
+    return             → Send this back as the HTTP response
+    userRepository     → The DB object injected by Spring via @Autowired
+    .findAll()         → JPA built-in — runs SELECT * FROM user automatically
+
+COMBINED MEANING:
+    When GET /users is called → getAllUsers() triggers →
+    findAll() runs SELECT * FROM user →
+    full list converted to JSON and sent back as response.
+
+
+----------------------------------------------------------------
+2. GET USER BY ID — @GetMapping("/{id}")
+----------------------------------------------------------------
+
+CODE:
+    @GetMapping("/{id}")
+    public User getUserById(@PathVariable Long id) {
+        return userRepository.findById(id).orElse(null);
+    }
+
+WORD BY WORD:
+    @GetMapping("/{id}")  → Listen for GET /users/1. { } slot changes per request
+    User                  → Returns ONE single User object (not a list)
+    @PathVariable         → Grabs the number from URL. /users/5 → id = 5
+    Long                  → Data type for ID — large number
+    id                    → Variable holding the number from URL
+    .findById(id)         → Runs SELECT * FROM user WHERE id = ?
+    .orElse(null)         → Safety net — if ID not found return null, don't crash
+
+    DIFFERENCE FROM GET ALL:
+    GET ALL          vs    GET BY ID
+    @GetMapping            @GetMapping("/{id}")
+    List<User>             User
+    findAll()              findById(id)
+    No input               @PathVariable id from URL
+    Returns everyone       Returns one person
+
+COMBINED MEANING:
+    GET /users/1 → @PathVariable grabs id=1 from URL →
+    findById(1) runs SELECT WHERE id=1 →
+    if found return User, if not .orElse(null) returns null safely.
+
+
+----------------------------------------------------------------
+3. POST — CREATE USER — @PostMapping
+----------------------------------------------------------------
+
+CODE:
+    @PostMapping
+    public User createUser(@RequestBody User user) {
+        return userRepository.save(user);
+    }
+
+WORD BY WORD:
+    @PostMapping       → HTTP POST — sending data TO server to create something
+                         No /{id} because creating new, no existing ID yet
+    @RequestBody       → Reads JSON from Postman body, converts it to User object
+    User user          → The converted object. {"name":"Raj"} becomes User variable
+    .save(user)        → No ID on object → JPA runs INSERT SQL
+                         Returns saved User WITH the auto-generated ID
+
+    DIFFERENCE FROM GET:
+    @GetMapping   → receiving data FROM server
+    @PostMapping  → sending data TO server to create
+
+    @PathVariable → grabbed from URL     → /users/1
+    @RequestBody  → grabbed from body    → { "name": "Raj" }
+
+COMBINED MEANING:
+    POST /users + JSON body → @RequestBody converts JSON to User object →
+    save(user) sees no ID → runs INSERT SQL →
+    new row created → returns user back now WITH generated ID.
+
+
+----------------------------------------------------------------
+4. PUT — UPDATE USER — @PutMapping("/{id}")
+----------------------------------------------------------------
+
+CODE:
+    @PutMapping("/{id}")
+    public User updateUser(@PathVariable Long id, @RequestBody User user) {
+        User existing = userRepository.findById(id).orElse(null);
+        if (existing != null) {
+            existing.setName(user.getName());
+            existing.setEmail(user.getEmail());
+            return userRepository.save(existing);
+        }
+        return null;
+    }
+
+WORD BY WORD:
+    @PutMapping("/{id}")      → HTTP PUT — update existing. Needs /{id} to know which user
+    Two parameters            → FIRST TIME using 2 inputs together:
+                                 @PathVariable Long id  = which user (from URL)
+                                 @RequestBody User user = new data (from body JSON)
+    User existing             → Fetch OLD record from DB first before changing anything
+    if (existing != null)     → Safety check. != means "not equal to"
+                                 If found → proceed. If not found → skip to return null
+    existing.setName(...)     → user.getName() gets new value from body
+                                 existing.setName() puts it into the old DB object
+    save(existing)            → existing HAS an ID → JPA runs UPDATE SQL (not INSERT)
+                                 Same save() method, different behavior based on ID
+    return null               → User not found at all, nothing was updated
+
+    KEY DIFFERENCE — save() behavior:
+    POST → save(user)         no ID → INSERT (create new)
+    PUT  → save(existing)     has ID → UPDATE (edit existing)
+
+COMBINED MEANING:
+    PUT /users/1 + JSON body →
+    id from URL = which user, @RequestBody = new data →
+    findById fetches old record →
+    if found: set new name/email → save(existing) runs UPDATE SQL →
+    returns updated user.
+    If not found → returns null.
+
+
+----------------------------------------------------------------
+5. DELETE — REMOVE USER — @DeleteMapping("/{id}")
+----------------------------------------------------------------
+
+CODE:
+    @DeleteMapping("/{id}")
+    public String deleteUser(@PathVariable Long id) {
+        userRepository.deleteById(id);
+        return "User " + id + " deleted successfully!";
+    }
+
+WORD BY WORD:
+    @DeleteMapping("/{id}")   → HTTP DELETE — remove a record. Needs /{id} to know which
+    String                    → Return type is String (plain text)
+                                 Nothing to return after deleting — just send a message
+    deleteById(id)            → JPA runs DELETE FROM user WHERE id = ?
+                                 Returns nothing (void) — just deletes silently
+    "User " + id + "..."      → + joins strings. If id=1 → "User 1 deleted successfully!"
+
+    DIFFERENCE FROM OTHERS:
+    All others   → returned User or List<User>
+    DELETE       → returns String (just a confirmation message)
+    save()       → returns the saved object
+    deleteById() → returns nothing (void)
+
+COMBINED MEANING:
+    DELETE /users/1 →
+    @PathVariable grabs id=1 from URL →
+    deleteById(1) runs DELETE SQL, returns nothing →
+    method returns plain String confirmation using + to join words.
+
+
+================================================================
+        MASTER SUMMARY — ALL 5 IN ONE VIEW
+================================================================
+
+    HTTP      URL              JPA Method       What happens
+    -------   --------------   --------------   -------------------------
+    GET       /users           findAll()        Return all rows as JSON
+    GET       /users/1         findById(id)     Return one user or null
+    POST      /users           save(user)       INSERT new row, return with ID
+    PUT       /users/1         save(existing)   UPDATE existing row, return updated
+    DELETE    /users/1         deleteById(id)   Remove row, return String message
+
+
+================================================================
+        KEY CONCEPTS QUICK REFERENCE
+================================================================
+
+    @GetMapping        → Listen for GET request
+    @PostMapping       → Listen for POST request
+    @PutMapping        → Listen for PUT request
+    @DeleteMapping     → Listen for DELETE request
+
+    @PathVariable      → Grab value FROM the URL        → /users/1
+    @RequestBody       → Grab value FROM the body JSON  → {"name":"Raj"}
+
+    findAll()          → SELECT * FROM user
+    findById(id)       → SELECT * FROM user WHERE id = ?
+    save() no ID       → INSERT INTO user ...
+    save() with ID     → UPDATE user SET ...
+    deleteById(id)     → DELETE FROM user WHERE id = ?
+
+    Optional           → Wrapper that says "may or may not exist"
+    .orElse(null)      → If found return it, if not return null safely
+
+    List<User>         → Multiple users (collection)
+    User               → Single user object
+    String             → Plain text message
+
+================================================================
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+================================================================
+    SPRING BOOT REST API — ALL ALTERNATE WAYS TO WRITE
+    All 5 Methods · Every Form · Every Style
+================================================================
+
+
+----------------------------------------------------------------
+1. INSTEAD OF @GetMapping  (GET ALL USERS)
+----------------------------------------------------------------
+
+WAY 1 — What you wrote (basic):
+    @GetMapping
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+WAY 2 — @RequestMapping (old traditional way):
+    @RequestMapping(method = RequestMethod.GET)
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+WAY 3 — with path written explicitly:
+    @GetMapping(path = "/users")
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+WAY 4 — ResponseEntity (professional way — full control of response):
+    @GetMapping
+    public ResponseEntity<List<User>> getAllUsers() {
+        List<User> users = userRepository.findAll();
+        return ResponseEntity.ok(users);  // sends 200 OK with body
+    }
+
+WAY 5 — with produces (tells client what format you are returning):
+    @GetMapping(produces = "application/json")
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+NOTES:
+    @GetMapping        → shortcut, clean, introduced Spring 4.3
+    @RequestMapping    → old original way, more typing, same result
+    ResponseEntity     → gives you control over status code (200, 404 etc)
+    produces           → tells client "I will send back JSON"
+
+
+----------------------------------------------------------------
+2. INSTEAD OF @GetMapping("/{id}")  (GET ONE USER)
+----------------------------------------------------------------
+
+WAY 1 — What you wrote (basic):
+    @GetMapping("/{id}")
+    public User getUserById(@PathVariable Long id) {
+        return userRepository.findById(id).orElse(null);
+    }
+
+WAY 2 — @RequestMapping old way:
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
+    public User getUserById(@PathVariable Long id) {
+        return userRepository.findById(id).orElse(null);
+    }
+
+WAY 3 — @PathVariable with explicit name (URL name different from variable):
+    @GetMapping("/{id}")
+    public User getUserById(@PathVariable("id") Long userId) {
+        return userRepository.findById(userId).orElse(null);
+    }
+    //                              ^^^          ^^^
+    //                         URL name      variable name — can be different
+
+WAY 4 — ResponseEntity (returns proper 404 if not found):
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+        return userRepository.findById(id)
+            .map(ResponseEntity::ok)                    // found → 200 OK
+            .orElse(ResponseEntity.notFound().build()); // not found → 404
+    }
+
+WAY 5 — Return Optional directly:
+    @GetMapping("/{id}")
+    public Optional<User> getUserById(@PathVariable Long id) {
+        return userRepository.findById(id);
+    }
+
+NOTES:
+    orElse(null)                  → returns null if not found (basic)
+    ResponseEntity.notFound()     → returns proper 404 HTTP status (professional)
+    Optional<User>                → lets caller decide what to do if empty
+    @PathVariable("id") Long xyz  → URL slot name and variable name can differ
+
+
+----------------------------------------------------------------
+3. INSTEAD OF @PostMapping  (CREATE USER)
+----------------------------------------------------------------
+
+WAY 1 — What you wrote (basic):
+    @PostMapping
+    public User createUser(@RequestBody User user) {
+        return userRepository.save(user);
+    }
+
+WAY 2 — @RequestMapping old way:
+    @RequestMapping(method = RequestMethod.POST)
+    public User createUser(@RequestBody User user) {
+        return userRepository.save(user);
+    }
+
+WAY 3 — ResponseEntity with 201 Created status (most correct REST way):
+    @PostMapping
+    public ResponseEntity<User> createUser(@RequestBody User user) {
+        User saved = userRepository.save(user);
+        return ResponseEntity.status(201).body(saved);
+        // 201 = Created — correct HTTP status for POST
+    }
+
+WAY 4 — with @Valid (validates incoming data before saving):
+    @PostMapping
+    public User createUser(@Valid @RequestBody User user) {
+        return userRepository.save(user);
+    }
+    // @Valid checks rules like @NotNull @Email @Size on User fields
+    // If validation fails → automatically sends 400 Bad Request
+
+WAY 5 — with consumes (says what format body must be sent in):
+    @PostMapping(consumes = "application/json")
+    public User createUser(@RequestBody User user) {
+        return userRepository.save(user);
+    }
+
+NOTES:
+    200 OK       → default, used for GET
+    201 Created  → correct status for POST (something was created)
+    @Valid       → adds input validation — real projects always use this
+    consumes     → "I only accept JSON body"
+    produces     → "I will send back JSON"
+
+
+----------------------------------------------------------------
+4. INSTEAD OF @PutMapping  (UPDATE USER)
+----------------------------------------------------------------
+
+WAY 1 — What you wrote (basic):
+    @PutMapping("/{id}")
+    public User updateUser(@PathVariable Long id, @RequestBody User user) {
+        User existing = userRepository.findById(id).orElse(null);
+        if (existing != null) {
+            existing.setName(user.getName());
+            existing.setEmail(user.getEmail());
+            return userRepository.save(existing);
+        }
+        return null;
+    }
+
+WAY 2 — @RequestMapping old way:
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
+    public User updateUser(@PathVariable Long id, @RequestBody User user) {
+        // same logic inside
+    }
+
+WAY 3 — ResponseEntity (proper 404 if not found):
+    @PutMapping("/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
+        User existing = userRepository.findById(id).orElse(null);
+        if (existing != null) {
+            existing.setName(user.getName());
+            existing.setEmail(user.getEmail());
+            return ResponseEntity.ok(userRepository.save(existing)); // 200 OK
+        }
+        return ResponseEntity.notFound().build(); // 404
+    }
+
+WAY 4 — @PatchMapping (update ONLY some fields, not all):
+    @PatchMapping("/{id}")
+    public User partialUpdate(@PathVariable Long id, @RequestBody User user) {
+        User existing = userRepository.findById(id).orElse(null);
+        if (existing != null) {
+            if (user.getName() != null) existing.setName(user.getName());
+            if (user.getEmail() != null) existing.setEmail(user.getEmail());
+            // only updates fields that are actually sent
+            // skips fields that are null / not sent
+            return userRepository.save(existing);
+        }
+        return null;
+    }
+
+NOTES — PUT vs PATCH:
+    PUT    → replace the ENTIRE object — must send all fields
+    PATCH  → update ONLY specific fields — send only what changed
+    Example:
+        PUT   body must have → { "name": "Raj", "email": "raj@gmail.com" }
+        PATCH body can have  → { "name": "Raj" }  (email stays unchanged)
+
+
+----------------------------------------------------------------
+5. INSTEAD OF @DeleteMapping  (DELETE USER)
+----------------------------------------------------------------
+
+WAY 1 — What you wrote (basic):
+    @DeleteMapping("/{id}")
+    public String deleteUser(@PathVariable Long id) {
+        userRepository.deleteById(id);
+        return "User " + id + " deleted successfully!";
+    }
+
+WAY 2 — @RequestMapping old way:
+    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
+    public String deleteUser(@PathVariable Long id) {
+        userRepository.deleteById(id);
+        return "User " + id + " deleted successfully!";
+    }
+
+WAY 3 — ResponseEntity with 204 No Content (most correct REST way):
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        userRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+        // 204 = deleted successfully, nothing to return
+    }
+
+WAY 4 — Check if exists before deleting (safer):
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteUser(@PathVariable Long id) {
+        if (userRepository.existsById(id)) {
+            userRepository.deleteById(id);
+            return ResponseEntity.ok("User " + id + " deleted!");
+        }
+        return ResponseEntity.notFound().build(); // 404 if not found
+    }
+
+NOTES:
+    deleteById()     → just deletes, no check — crashes if ID not found
+    existsById()     → checks first safely before deleting
+    204 No Content   → correct HTTP status for DELETE (nothing to return)
+    200 OK + String  → simpler but not fully correct REST standard
+    Void             → means literally nothing returned in body
+
+
+================================================================
+    BIG PICTURE — ALL ALTERNATE FORMS IN ONE VIEW
+================================================================
+
+    Method    Simple Way           Old Way                  Professional Way
+    --------  -------------------  -----------------------  ----------------------
+    GET ALL   @GetMapping          @RequestMapping GET       ResponseEntity<List>
+    GET ONE   @GetMapping/{id}     @RequestMapping GET       ResponseEntity + 404
+    POST      @PostMapping         @RequestMapping POST      ResponseEntity 201
+    PUT       @PutMapping/{id}     @RequestMapping PUT       ResponseEntity + 404
+    PATCH     @PatchMapping/{id}   @RequestMapping PATCH     partial fields only
+    DELETE    @DeleteMapping/{id}  @RequestMapping DELETE    ResponseEntity 204
+
+
+================================================================
+    HTTP STATUS CODES — WHICH TO USE WHERE
+================================================================
+
+    200 OK           → GET success / PUT success
+    201 Created      → POST success (something was created)
+    204 No Content   → DELETE success (nothing to return)
+    400 Bad Request  → validation failed (@Valid)
+    404 Not Found    → ID does not exist in DB
+
+
+================================================================
+    THE 3 LEVELS — WHICH TO USE WHEN
+================================================================
+
+    LEVEL 1 — BEGINNER (tutorials, learning):
+        @GetMapping, return User directly, orElse(null)
+
+    LEVEL 2 — INTERMEDIATE (real projects):
+        @GetMapping, return ResponseEntity<User>
+        proper 404 with ResponseEntity.notFound().build()
+
+    LEVEL 3 — PROFESSIONAL (production APIs):
+        ResponseEntity + proper status codes
+        @Valid for input validation
+        @PatchMapping for partial updates
+        existsById() before deleting
+
+
+================================================================
+    KEY RULE TO REMEMBER
+================================================================
+
+    @GetMapping              = shortcut for @RequestMapping(method = GET)
+    @PostMapping             = shortcut for @RequestMapping(method = POST)
+    @PutMapping              = shortcut for @RequestMapping(method = PUT)
+    @PatchMapping            = shortcut for @RequestMapping(method = PATCH)
+    @DeleteMapping           = shortcut for @RequestMapping(method = DELETE)
+
+    All shortcuts introduced in Spring 4.3 — both work exactly the same.
+    Shortcuts are cleaner and shorter — always prefer them over @RequestMapping.
+
+    PUT vs PATCH:
+    PUT    → send all fields   → replaces entire object
+    PATCH  → send some fields  → updates only what you send
+
+    return null          → basic, no proper HTTP status
+    ResponseEntity       → professional, controls exact HTTP status code
+
+================================================================
