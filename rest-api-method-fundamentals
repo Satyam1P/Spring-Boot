@@ -1,0 +1,328 @@
+================================================================
+        REST API METHODS — FUNDAMENTAL STRUCTURE
+        How Every Method Is Built · What Goes Where · Why
+================================================================
+
+
+----------------------------------------------------------------
+THE FUNDAMENTAL PATTERN — SAME FOR ALL 5 METHODS
+----------------------------------------------------------------
+
+Every single method you write in the Controller follows
+this exact same skeleton:
+
+    @HttpMethodAnnotation("url-path")        ← Line 1: what request to listen for
+    public ReturnType methodName(inputs) {   ← Line 2: method signature
+        // Line 3: do something with DB
+        // Line 4: return something back
+    }
+
+That is it. Every method is just these 4 things.
+The only thing that CHANGES between methods is:
+    - Which annotation (@Get, @Post, @Put, @Delete)
+    - What return type (List, User, String)
+    - What inputs (nothing, @PathVariable, @RequestBody, or both)
+    - Which JPA method inside (findAll, findById, save, deleteById)
+
+
+----------------------------------------------------------------
+THE 4 BUILDING BLOCKS OF EVERY METHOD
+----------------------------------------------------------------
+
+BLOCK 1 — ANNOTATION (what HTTP request to catch)
+    Written  → above the method, starts with @
+    Purpose  → tells Spring which HTTP request triggers this method
+    Options  → @GetMapping / @PostMapping / @PutMapping / @DeleteMapping
+    Can have → a URL path inside like ("/{id}") or nothing
+
+BLOCK 2 — METHOD SIGNATURE (what the method is and takes)
+    Written  → public ReturnType methodName(parameters)
+    Parts    →
+        public        = anyone can call it (must be public for Spring)
+        ReturnType    = what this method gives back (List, User, String)
+        methodName    = any name you choose (doesn't matter to Spring)
+        parameters    = what inputs it needs (@PathVariable, @RequestBody)
+
+BLOCK 3 — METHOD BODY (what actually happens inside)
+    Written  → inside { } curly braces
+    Purpose  → talk to database using the repository object
+    Always   → userRepository.someJpaMethod()
+
+BLOCK 4 — RETURN STATEMENT (what gets sent back as response)
+    Written  → return something;
+    Purpose  → this value gets converted to JSON and sent back
+    Exception → deleteById has no return value from JPA
+                so you manually return a String message
+
+
+----------------------------------------------------------------
+GET ALL USERS — FUNDAMENTAL BREAKDOWN
+----------------------------------------------------------------
+
+    @GetMapping                              ← BLOCK 1: catch GET /users
+    public List<User> getAllUsers() {        ← BLOCK 2: signature
+        return userRepository.findAll();     ← BLOCK 3+4: body + return
+    }
+
+    ANNOTATION:
+        @GetMapping
+        → no path inside = listens to base URL /users
+        → GET = fetching/reading data, not changing anything
+
+    METHOD SIGNATURE:
+        public          → accessible to Spring and outside world
+        List<User>      → return type = many users in a collection
+        getAllUsers      → method name (you chose this)
+        ()              → empty = needs NO input from the request
+
+    METHOD BODY:
+        userRepository.findAll()
+        → goes to DB
+        → runs SELECT * FROM user table
+        → gets back all rows as a List of User objects
+
+    RETURN:
+        return userRepository.findAll();
+        → that List gets converted to JSON array automatically
+        → sent back as HTTP response
+
+
+----------------------------------------------------------------
+GET USER BY ID — FUNDAMENTAL BREAKDOWN
+----------------------------------------------------------------
+
+    @GetMapping("/{id}")                                      ← BLOCK 1
+    public User getUserById(@PathVariable Long id) {          ← BLOCK 2
+        return userRepository.findById(id).orElse(null);     ← BLOCK 3+4
+    }
+
+    ANNOTATION:
+        @GetMapping("/{id}")
+        → "/{id}" is a URL slot — changes per request
+        → /users/1 or /users/5 or /users/99
+        → { } means this part is a variable, not fixed text
+
+    METHOD SIGNATURE:
+        public          → accessible
+        User            → return type = ONE single User (not a list)
+        getUserById     → method name
+        (@PathVariable Long id)
+            @PathVariable → grab the number from URL slot
+            Long          → data type of that number
+            id            → variable name to hold that number
+
+    METHOD BODY:
+        userRepository.findById(id)
+        → runs SELECT * FROM user WHERE id = ?
+        → returns Optional<User> (may or may not exist)
+
+        .orElse(null)
+        → if found    → return the User object
+        → if not found → return null instead of crashing
+
+    RETURN:
+        return userRepository.findById(id).orElse(null);
+        → found User gets converted to JSON object
+        → not found returns null (empty response)
+
+
+----------------------------------------------------------------
+POST CREATE USER — FUNDAMENTAL BREAKDOWN
+----------------------------------------------------------------
+
+    @PostMapping                                   ← BLOCK 1
+    public User createUser(@RequestBody User user) {  ← BLOCK 2
+        return userRepository.save(user);          ← BLOCK 3+4
+    }
+
+    ANNOTATION:
+        @PostMapping
+        → no path = listens to base URL /users
+        → POST = sending data TO server, creating something new
+        → no /{id} because we are creating, no existing ID yet
+
+    METHOD SIGNATURE:
+        public          → accessible
+        User            → return type = the newly created User
+        createUser      → method name
+        (@RequestBody User user)
+            @RequestBody  → grab JSON from request body
+                            convert it to a User Java object
+            User          → type of that object
+            user          → variable name to hold it
+
+    METHOD BODY:
+        userRepository.save(user)
+        → user object has no ID (not set yet)
+        → JPA sees no ID → runs INSERT INTO user table
+        → DB auto-generates the ID
+        → returns the saved User now WITH the generated ID
+
+    RETURN:
+        return userRepository.save(user);
+        → saved User (with ID) gets converted to JSON
+        → sent back so caller knows what ID was assigned
+
+
+----------------------------------------------------------------
+PUT UPDATE USER — FUNDAMENTAL BREAKDOWN
+----------------------------------------------------------------
+
+    @PutMapping("/{id}")                                            ← BLOCK 1
+    public User updateUser(@PathVariable Long id,                   ← BLOCK 2
+                           @RequestBody User user) {
+        User existing = userRepository.findById(id).orElse(null);  ← BLOCK 3
+        if (existing != null) {
+            existing.setName(user.getName());
+            existing.setEmail(user.getEmail());
+            return userRepository.save(existing);                   ← BLOCK 4
+        }
+        return null;
+    }
+
+    ANNOTATION:
+        @PutMapping("/{id}")
+        → PUT = updating existing data
+        → needs /{id} to know WHICH record to update
+
+    METHOD SIGNATURE:
+        public          → accessible
+        User            → return type = the updated User
+        updateUser      → method name
+        TWO parameters this time:
+            @PathVariable Long id     → which user (from URL)
+            @RequestBody User user    → new data to update with (from body)
+
+    METHOD BODY — more steps than others:
+        Step 1: User existing = userRepository.findById(id).orElse(null);
+                → first fetch the OLD record from DB
+                → can't update something you haven't found first
+
+        Step 2: if (existing != null)
+                → check if that user actually exists
+                → != means "not equal to"
+                → if found → go inside if block
+                → if not found → skip to return null
+
+        Step 3: existing.setName(user.getName());
+                existing.setEmail(user.getEmail());
+                → user.getName()      = get new value from body JSON
+                → existing.setName()  = put new value into old object
+                → do this for every field you want to update
+
+        Step 4: return userRepository.save(existing);
+                → existing object HAS an ID
+                → JPA sees existing ID → runs UPDATE SQL (not INSERT)
+                → same save() method, different behavior based on ID
+
+    RETURN:
+        return userRepository.save(existing);  → updated User
+        return null;                           → if user not found
+
+
+----------------------------------------------------------------
+DELETE USER — FUNDAMENTAL BREAKDOWN
+----------------------------------------------------------------
+
+    @DeleteMapping("/{id}")                     ← BLOCK 1
+    public String deleteUser(@PathVariable Long id) {   ← BLOCK 2
+        userRepository.deleteById(id);          ← BLOCK 3
+        return "User " + id + " deleted!";      ← BLOCK 4
+    }
+
+    ANNOTATION:
+        @DeleteMapping("/{id}")
+        → DELETE = removing data
+        → needs /{id} to know WHICH record to remove
+
+    METHOD SIGNATURE:
+        public          → accessible
+        String          → return type = plain text message
+                          (nothing meaningful to return after delete
+                           so just send a confirmation text)
+        deleteUser      → method name
+        (@PathVariable Long id)
+            → grab the ID number from URL path
+
+    METHOD BODY:
+        userRepository.deleteById(id);
+        → runs DELETE FROM user WHERE id = ?
+        → returns NOTHING (void) — just silently deletes
+        → no object comes back unlike save() or findAll()
+
+    RETURN:
+        return "User " + id + " deleted!";
+        → manually build a String message
+        → + joins text pieces together
+        → if id=1 result is "User 1 deleted!"
+        → this String is sent back as plain text response
+
+
+================================================================
+        SIDE BY SIDE — ALL 5 IN ONE VIEW
+================================================================
+
+                  GET ALL      GET ONE          POST           PUT              DELETE
+                  ---------    -------------    ----------     -------------    -------------
+ANNOTATION        @GetMapping  @GetMapping      @PostMapping   @PutMapping      @DeleteMapping
+                               ("/{id}")                       ("/{id}")        ("/{id}")
+
+RETURN TYPE       List<User>   User             User           User             String
+
+METHOD NAME       getAllUsers  getUserById      createUser     updateUser       deleteUser
+
+PARAMETERS        ()           (@PathVariable   (@RequestBody  (@PathVariable   (@PathVariable
+                               Long id)         User user)     Long id,         Long id)
+                                                               @RequestBody
+                                                               User user)
+
+JPA METHOD        findAll()    findById(id)     save(user)     save(existing)   deleteById(id)
+                               .orElse(null)
+
+SQL BEHIND        SELECT *     SELECT *         INSERT INTO    UPDATE user      DELETE FROM
+                  FROM user    WHERE id=?       user           SET ...          WHERE id=?
+
+INPUTS NEEDED     nothing      ID from URL      JSON from      ID from URL      ID from URL
+                                                body           + JSON from body
+
+
+================================================================
+        THE ONLY 4 THINGS THAT CHANGE BETWEEN METHODS
+================================================================
+
+    1. ANNOTATION
+       @GetMapping / @PostMapping / @PutMapping / @DeleteMapping
+       + whether it has ("/{id}") or not
+
+    2. RETURN TYPE
+       List<User>  → when returning multiple
+       User        → when returning one
+       String      → when nothing meaningful to return
+
+    3. PARAMETERS
+       nothing          → when request needs no input
+       @PathVariable    → when ID comes from URL
+       @RequestBody     → when data comes from body JSON
+       both together    → PUT needs both
+
+    4. JPA METHOD INSIDE
+       findAll()        → get all rows
+       findById()       → get one row
+       save()           → insert or update
+       deleteById()     → remove a row
+
+
+================================================================
+        WHAT STAYS THE SAME IN EVERY METHOD
+================================================================
+
+    → Always inside a class marked @RestController
+    → Always public
+    → Always uses the injected userRepository object
+    → Always has a return statement (except void methods)
+    → Spring always auto-converts return value to JSON
+    → Method name never matters to Spring — only annotation matters
+    → { } curly braces always wrap the method body
+
+
+================================================================
